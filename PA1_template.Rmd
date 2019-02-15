@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-* Load the necessary libraries*
+*Load the necessary libraries*
 ```{r}
 library("ggplot2")
 library("readr")
@@ -21,7 +21,7 @@ library("readr")
 ## Loading and preprocessing the data
 
 
-*Download the file in the working directory and keep only the rows without NAs*
+*We download the file in the working directory and keep only the rows without NAs*
 ```{r}
 Data_full <- read_csv("activity.csv",guess_max = 40000)
 Data <- Data_full[complete.cases(Data_full),]
@@ -31,70 +31,64 @@ Data <- Data_full[complete.cases(Data_full),]
 
 ## What is mean total number of steps taken per day?
 
-*We can use bars because there are few days: only for 2 months*
+*We create an aggregation from the data frame which calculates the total of the steps for each day then we plot the histogram*
 ```{r}
-ggplot(data=Data, aes(x=date, y = steps))+ geom_bar(stat="identity")
-
 m_steps<- aggregate(steps~date,data=Data,sum)
 ggplot(data=m_steps, aes(x=steps))+ geom_histogram(bins = 10, color = "white")
 
-paste(" Mean and median: ",round(mean(m_steps$steps),2),round(median(m_steps$steps),2))
+paste(" Mean and median are: ",round(mean(m_steps$steps),2)," and ",round(median(m_steps$steps),2))
 
 ```
 
 
 ## What is the average daily activity pattern?
 
-*We create a subset which averages the steps for each interval*
+*We create an aggregation from the data frame which averages the steps for each interval*
 ```{r}
 m_interval<- aggregate(steps~interval,data=Data,mean)
 ggplot(data = m_interval, aes(x = interval, y = steps))+ geom_line(color = "#00AFBB", size = 1)
 
-#et en groupant directement ?
 ```
 
 
 ```{r}
-paste("The 5-minute interval that, on average, contains the maximum number of steps is : ",m_interval[m_interval$steps == max(m_interval$steps),"interval"]," for a max value of ",max(m_interval))
+paste("The 5-minute interval that, on average, contains the maximum number of steps is : ",m_interval[m_interval$steps == max(m_interval$steps),"interval"]," for a max value of ",max(m_interval$steps))
 ```
 
 
 
 ## Imputing missing values
 
-
-Here are the numers of NAs for each columns of the full file. Missing values are for steps only.
+*Here are the numers of NAs for each columns of the full file*
 ```{r}
 colSums(is.na(Data_full))
 ```
+We see that missing values are for steps variable only.
 
-*We will use the mean for the 5 min intervall, that is already stored un the data frame m_interval created above
-there a function replaces the values of steps that are NA by the value of m_interval that fits the interval.*
+
+*We will use the mean for the 5 min intervall, that is already stored in the data frame m_interval created above. There a function replaces the values of steps that are NA by the value of m_interval that fits the interval.*
 ```{r}
 Data_full_new <- Data_full
 
 Data_full_new$steps <- mapply(function(x,y) ifelse(is.na(x), m_interval[m_interval$interval==y,"steps"], x), Data_full_new$steps, Data_full_new$interval)
 
-# faire un truc plus simple avec moyenne colonne ? a$steps <- replace(a$steps, a$interval %in% b$interval, b$V1)
 ```
 
 
-*We plot the new histogram and create a little table summing the steps by days*
+*We create an aggregation from the new data frame, which calculates the total of the steps for each day then we plot the new histogram*
 ```{r}
-ggplot(data=Data_full_new, aes(x=date, y = steps))+ geom_bar(stat="identity") 
-
 m_steps2<- aggregate(steps~date,data=Data_full_new,sum)
 ggplot(data=m_steps2, aes(x=steps))+ geom_histogram(bins = 10, color = "white")
 
-paste(" Mean and median: ",round(mean(m_steps2$steps),2),round(median(m_steps2$steps),2))
+paste(" Mean and median are: ",round(mean(m_steps2$steps),2)," and ",round(median(m_steps2$steps),2))
 ```
 The histogram is different: it shows that the imputing has added a lot of values above 10000 steps.
-The mean stays the same ans the median is closer to the mean.
+The mean stays the same and the median is now eqal to the mean.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-*We create a new column with the weekday : we force local in english so that it could be reproductible*
+*We create a new column with the weekday : we first force local in english so that it could be reproductible*
 ```{r}
 Sys.setlocale("LC_ALL","English")
 Data_full_new$day <- sapply(Data_full_new$date, function (x) ifelse(weekdays(x)%in%c("Saturday","Sunday"),"weekend","weekday")) 
@@ -103,3 +97,4 @@ md_interval<- aggregate(steps~interval+day,data=Data_full_new,mean)
 ggplot(data = md_interval, aes(x = interval, y = steps))+ geom_line(color = "#00AFBB", size = 1)+facet_wrap(~day)
 ```
 
+There is a difference.
